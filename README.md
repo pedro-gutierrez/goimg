@@ -38,6 +38,9 @@ sizes := map[string]int{
 }
 ```
 
+Goimg uses Libvips smartcrop in order to normalize aspect ratios that are bigger than 16:9. For smaller aspect ratios, the original value is kept.
+
+
 ## Related projects
 
 * Libvips: https://github.com/jcupitt/libvips

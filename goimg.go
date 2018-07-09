@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
-	//	"os"
 )
 
 func main() {
@@ -72,6 +71,15 @@ func WithEachSize(sizes string, next func(s string)) {
 	}
 }
 
+func AspectRatioCorrection(width int, w int, h int) int {
+	actual := (float64(w) / float64(h) * 100) / 100
+	if actual > 1.77 {
+		return int(float64(width) / float64(1.77))
+	} else {
+		return h * width / w
+	}
+}
+
 func WithImageOptions(s string, m bimg.ImageMetadata, next func(o bimg.Options)) {
 
 	sizes := map[string]int{
@@ -87,7 +95,7 @@ func WithImageOptions(s string, m bimg.ImageMetadata, next func(o bimg.Options))
 
 		next(bimg.Options{
 			Width:          width,
-			Height:         m.Size.Height * width / m.Size.Width,
+			Height:         AspectRatioCorrection(width, m.Size.Width, m.Size.Height),
 			Crop:           true,
 			Embed:          true,
 			Type:           bimg.JPEG,
