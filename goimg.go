@@ -71,12 +71,34 @@ func WithEachSize(sizes string, next func(s string)) {
 	}
 }
 
-func AspectRatioCorrection(width int, w int, h int) int {
-	actual := (float64(w) / float64(h) * 100) / 100
-	if actual > 1.77 {
-		return int(float64(width) / float64(1.77))
+type ResizeOpts struct {
+	Height int
+	Force  bool
+}
+
+func GetResizeOpts(width int, w int, h int) ResizeOpts {
+	if h > w {
+		return GetResizeOpts(width, w, w)
 	} else {
-		return h * width / w
+		if width > 128 {
+			actual := (float64(w) / float64(h) * 100) / 100
+			if actual > 1.77 {
+				return ResizeOpts{
+					Height: int(float64(width) / float64(1.77)),
+					Force:  false,
+				}
+			} else {
+				return ResizeOpts{
+					Height: h * width / w,
+					Force:  false,
+				}
+			}
+		} else {
+			return ResizeOpts{
+				Height: width,
+				Force:  true,
+			}
+		}
 	}
 }
 
@@ -88,19 +110,31 @@ func WithImageOptions(s string, m bimg.ImageMetadata, next func(o bimg.Options))
 		"regular": 480,
 		"small":   320,
 		"tiny":    128,
+		"avatar":  64,
 	}
 
 	width, ok := sizes[s]
 	if ok {
 
-		next(bimg.Options{
+		resizeOpts := GetResizeOpts(width, m.Size.Width, m.Size.Height)
+
+		//fmt.Println(strings.Replace(fmt.Sprintf("%#v", resizeOpts), ", ", "\n", -1))
+
+		opts := bimg.Options{
 			Width:          width,
-			Height:         AspectRatioCorrection(width, m.Size.Width, m.Size.Height),
+			Height:         resizeOpts.Height,
+			Force:          resizeOpts.Force,
 			Crop:           true,
+			SmartCrop:      true,
 			Embed:          true,
 			Type:           bimg.JPEG,
+			Gravity:        bimg.GravitySmart,
 			Interpretation: bimg.InterpretationSRGB,
-		})
+		}
+
+		//fmt.Println(strings.Replace(fmt.Sprintf("%#v", opts), ", ", "\n", -1))
+
+		next(opts)
 	} else {
 		fmt.Println(fmt.Sprintf("Size not supported: %s", s))
 	}
